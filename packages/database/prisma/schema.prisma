@@ -1,0 +1,198 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["custom"]
+}
+
+// ─── Group 1: Regions & Locales ───────────────────────────────────────────────
+
+model Region {
+  id               String   @id @default(cuid())
+  code             String   @unique
+  medusa_region_id String   @unique
+  is_active        Boolean  @default(true)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  region_locales       RegionLocale[]
+  variant_availability ProductVariantRegionAvailability[]
+
+  @@map("regions")
+  @@schema("custom")
+}
+
+model Locale {
+  code       String   @id
+  name       String
+  is_rtl     Boolean  @default(false)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  region_locales            RegionLocale[]
+  product_translations      ProductTranslation[]
+  option_translations       ProductOptionTranslation[]
+  option_value_translations ProductOptionValueTranslation[]
+  category_translations     CategoryTranslation[]
+
+  @@map("locales")
+  @@schema("custom")
+}
+
+model RegionLocale {
+  region_id   String
+  locale_code String
+  is_default  Boolean @default(false)
+
+  region Region @relation(fields: [region_id], references: [id], onDelete: Cascade)
+  locale Locale @relation(fields: [locale_code], references: [code], onDelete: Cascade)
+
+  @@id([region_id, locale_code])
+  @@map("region_locales")
+  @@schema("custom")
+}
+
+// ─── Group 2: Product Translations ────────────────────────────────────────────
+
+model ProductTranslation {
+  id                String   @id @default(cuid())
+  product_id        String
+  locale_code       String
+  name              String
+  short_description String?
+  description       String?
+  features          Json?
+  meta_title        String?
+  meta_description  String?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  locale Locale @relation(fields: [locale_code], references: [code], onDelete: Cascade)
+
+  @@unique([product_id, locale_code])
+  @@index([product_id])
+  @@map("product_translations")
+  @@schema("custom")
+}
+
+// ─── Group 3: Option & Option Value Translations ───────────────────────────────
+
+model ProductOptionTranslation {
+  id          String   @id @default(cuid())
+  option_id   String
+  locale_code String
+  name        String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  locale Locale @relation(fields: [locale_code], references: [code], onDelete: Cascade)
+
+  @@unique([option_id, locale_code])
+  @@index([option_id])
+  @@map("product_option_translations")
+  @@schema("custom")
+}
+
+model ProductOptionValueTranslation {
+  id              String   @id @default(cuid())
+  option_value_id String
+  locale_code     String
+  label           String
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  locale Locale @relation(fields: [locale_code], references: [code], onDelete: Cascade)
+
+  @@unique([option_value_id, locale_code])
+  @@index([option_value_id])
+  @@map("product_option_value_translations")
+  @@schema("custom")
+}
+
+// ─── Group 4: Variant Regional Availability ───────────────────────────────────
+
+model ProductVariantRegionAvailability {
+  variant_id   String
+  region_id    String
+  is_available Boolean  @default(true)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  region Region @relation(fields: [region_id], references: [id], onDelete: Cascade)
+
+  @@id([variant_id, region_id])
+  @@index([variant_id])
+  @@map("product_variant_region_availability")
+  @@schema("custom")
+}
+
+// ─── Group 5: Images ──────────────────────────────────────────────────────────
+
+model ProductImage {
+  id         String   @id @default(cuid())
+  product_id String
+  variant_id String?
+  url        String
+  alt_text   String?
+  sort_order Int      @default(0)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([product_id])
+  @@index([variant_id])
+  @@map("product_images")
+  @@schema("custom")
+}
+
+// ─── Group 6: Categories ──────────────────────────────────────────────────────
+
+model Category {
+  id         String   @id @default(cuid())
+  handle     String   @unique
+  parent_id  String?
+  sort_order Int      @default(0)
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  parent       Category?             @relation("CategoryTree", fields: [parent_id], references: [id])
+  children     Category[]            @relation("CategoryTree")
+  translations CategoryTranslation[]
+  products     ProductCategory[]
+
+  @@map("categories")
+  @@schema("custom")
+}
+
+model CategoryTranslation {
+  id          String   @id @default(cuid())
+  category_id String
+  locale_code String
+  name        String
+  description String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  category Category @relation(fields: [category_id], references: [id], onDelete: Cascade)
+  locale   Locale   @relation(fields: [locale_code], references: [code], onDelete: Cascade)
+
+  @@unique([category_id, locale_code])
+  @@map("category_translations")
+  @@schema("custom")
+}
+
+model ProductCategory {
+  product_id  String
+  category_id String
+
+  category Category @relation(fields: [category_id], references: [id], onDelete: Cascade)
+
+  @@id([product_id, category_id])
+  @@index([product_id])
+  @@map("product_categories")
+  @@schema("custom")
+}

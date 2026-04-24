@@ -7,7 +7,8 @@
     "build": "medusa build",
     "start": "medusa start",
     "dev": "medusa develop",
-    "seed:bootstrap": "medusa exec ./src/scripts/seed-bootstrap.ts"
+    "seed:bootstrap": "medusa exec ./src/scripts/seed-bootstrap.ts",
+    "seed:dev": "medusa exec ./src/scripts/seed-dev.ts"
   },
   "dependencies": {
     "@fragrance/shared": "workspace:*",

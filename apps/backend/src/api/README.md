@@ -101,9 +101,9 @@ export const GET = async (
 
 ## Middleware
 
-You can apply middleware to your routes by creating a file called `/api/middlewares.ts`. This file must export a configuration object with what middleware you want to apply to which routes.
+You can apply proxy to your routes by creating a file called `/api/middlewares.ts`. This file must export a configuration object with what proxy you want to apply to which routes.
 
-For example, if you want to apply a custom middleware function to the `/store/custom` route, you can do so by adding the following to your `/api/middlewares.ts` file:
+For example, if you want to apply a custom proxy function to the `/store/custom` route, you can do so by adding the following to your `/api/middlewares.ts` file:
 
 ```ts
 import { defineMiddlewares } from "@medusajs/framework/http"
@@ -132,4 +132,4 @@ export default defineMiddlewares({
 })
 ```
 
-The `matcher` property can be either a string or a regular expression. The `middlewares` property accepts an array of middleware functions.
+The `matcher` property can be either a string or a regular expression. The `middlewares` property accepts an array of proxy functions.

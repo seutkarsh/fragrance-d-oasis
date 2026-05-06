@@ -10,3 +10,8 @@ export function isValidLocale(value: string): value is Locale {
 export function isRTL(locale: Locale): boolean {
     return RTL_LOCALES.includes(locale)
 }
+
+export const LOCALE_LABELS: Record<Locale, string> = {
+    en: "EN",
+    ar: "ع",
+}

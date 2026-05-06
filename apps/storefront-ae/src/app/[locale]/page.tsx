@@ -9,8 +9,7 @@ export default async function HomePage({
 
     return (
         <main>
-            <h1>Fragrance d'Oasis</h1>
-            <p>Locale: {locale}</p>
+
         </main>
     )
 }

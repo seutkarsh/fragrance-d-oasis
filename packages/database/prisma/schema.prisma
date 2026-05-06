@@ -21,6 +21,7 @@ model Region {
 
   region_locales       RegionLocale[]
   variant_availability ProductVariantRegionAvailability[]
+  merchandising        ProductMerchandising[]
 
   @@map("regions")
   @@schema("custom")
@@ -33,11 +34,13 @@ model Locale {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  region_locales            RegionLocale[]
-  product_translations      ProductTranslation[]
-  option_translations       ProductOptionTranslation[]
-  option_value_translations ProductOptionValueTranslation[]
-  category_translations     CategoryTranslation[]
+  region_locales               RegionLocale[]
+  product_translations         ProductTranslation[]
+  option_translations          ProductOptionTranslation[]
+  option_value_translations    ProductOptionValueTranslation[]
+  category_translations        CategoryTranslation[]
+  attribute_translations       ProductAttributeTranslation[]
+  attribute_value_translations ProductAttributeValueTranslation[]
 
   @@map("locales")
   @@schema("custom")
@@ -126,6 +129,7 @@ model ProductVariantRegionAvailability {
 
   @@id([variant_id, region_id])
   @@index([variant_id])
+  @@index([region_id, is_available])
   @@map("product_variant_region_availability")
   @@schema("custom")
 }
@@ -159,10 +163,11 @@ model Category {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  parent       Category?             @relation("CategoryTree", fields: [parent_id], references: [id])
-  children     Category[]            @relation("CategoryTree")
-  translations CategoryTranslation[]
-  products     ProductCategory[]
+  parent          Category?                  @relation("CategoryTree", fields: [parent_id], references: [id])
+  children        Category[]                 @relation("CategoryTree")
+  translations    CategoryTranslation[]
+  products        ProductCategory[]
+  attribute_scope ProductAttributeCategory[]
 
   @@map("categories")
   @@schema("custom")
@@ -193,6 +198,209 @@ model ProductCategory {
 
   @@id([product_id, category_id])
   @@index([product_id])
+  @@index([category_id])
   @@map("product_categories")
+  @@schema("custom")
+}
+
+// ─── Group 7: SDUI ────────────────────────────────────────────────────────────
+
+model SduiPage {
+  id         String   @id @default(cuid())
+  slug       String   @unique
+  title      String
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  blocks SduiBlock[]
+
+  @@map("sdui_pages")
+  @@schema("custom")
+}
+
+model SduiBlock {
+  id         String   @id @default(cuid())
+  page_id    String
+  layout     String
+  content    Json
+  sort_order Int      @default(0)
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  page SduiPage @relation(fields: [page_id], references: [id], onDelete: Cascade)
+
+  @@index([page_id])
+  @@map("sdui_blocks")
+  @@schema("custom")
+}
+
+// ─── Group 8: Product Attributes (Generic) ────────────────────────────────────
+
+enum AttributeType {
+  single // one value from a predefined list (e.g. gender, scent_family)
+  multi // many values from a predefined list (e.g. scent_notes, materials)
+  range // numeric value (e.g. volume_ml, weight_g, voltage)
+  boolean // true/false (e.g. is_limited_edition, is_unisex)
+
+  @@schema("custom")
+}
+
+enum AttributeScope {
+  PRODUCT // attribute lives on the product (gender, scent_family)
+  VARIANT // attribute lives on the variant (volume_ml, concentration)
+
+  @@schema("custom")
+}
+
+model ProductAttribute {
+  id            String         @id @default(cuid())
+  handle        String         @unique
+  type          AttributeType
+  scope         AttributeScope
+  is_filterable Boolean        @default(true)
+  is_active     Boolean        @default(true)
+  sort_order    Int            @default(0)
+  unit          String?
+  created_at    DateTime       @default(now())
+  updated_at    DateTime       @updatedAt
+
+  values              ProductAttributeValue[]
+  translations        ProductAttributeTranslation[]
+  category_scope      ProductAttributeCategory[]
+  product_assignments ProductAttributeAssignment[]
+  variant_assignments VariantAttributeAssignment[]
+
+  @@map("product_attributes")
+  @@schema("custom")
+}
+
+model ProductAttributeTranslation {
+  id           String   @id @default(cuid())
+  attribute_id String
+  locale_code  String
+  name         String
+  description  String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  attribute ProductAttribute @relation(fields: [attribute_id], references: [id], onDelete: Cascade)
+  locale    Locale           @relation(fields: [locale_code], references: [code], onDelete: Cascade)
+
+  @@unique([attribute_id, locale_code])
+  @@index([attribute_id])
+  @@map("product_attribute_translations")
+  @@schema("custom")
+}
+
+// Predefined values for `single` and `multi` attributes only.
+// Not used by `range` or `boolean` types.
+model ProductAttributeValue {
+  id           String   @id @default(cuid())
+  attribute_id String
+  handle       String
+  sort_order   Int      @default(0)
+  metadata     Json?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  attribute           ProductAttribute                   @relation(fields: [attribute_id], references: [id], onDelete: Cascade)
+  translations        ProductAttributeValueTranslation[]
+  product_assignments ProductAttributeAssignment[]
+  variant_assignments VariantAttributeAssignment[]
+
+  @@unique([attribute_id, handle])
+  @@index([attribute_id])
+  @@map("product_attribute_values")
+  @@schema("custom")
+}
+
+model ProductAttributeValueTranslation {
+  id          String   @id @default(cuid())
+  value_id    String
+  locale_code String
+  label       String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  value  ProductAttributeValue @relation(fields: [value_id], references: [id], onDelete: Cascade)
+  locale Locale                @relation(fields: [locale_code], references: [code], onDelete: Cascade)
+
+  @@unique([value_id, locale_code])
+  @@index([value_id])
+  @@map("product_attribute_value_translations")
+  @@schema("custom")
+}
+
+// Optional category scoping. Empty → attribute is global.
+// Non-empty → attribute applies only to products in these categories.
+model ProductAttributeCategory {
+  attribute_id String
+  category_id  String
+
+  attribute ProductAttribute @relation(fields: [attribute_id], references: [id], onDelete: Cascade)
+  category  Category         @relation(fields: [category_id], references: [id], onDelete: Cascade)
+
+  @@id([attribute_id, category_id])
+  @@index([category_id])
+  @@map("product_attribute_categories")
+  @@schema("custom")
+}
+
+// Product-level assignment (gender, scent_family, scent_notes…)
+model ProductAttributeAssignment {
+  id            String   @id @default(cuid())
+  product_id    String
+  attribute_id  String
+  value_id      String?
+  value_decimal Decimal?
+  value_boolean Boolean?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  attribute ProductAttribute       @relation(fields: [attribute_id], references: [id], onDelete: Cascade)
+  value     ProductAttributeValue? @relation(fields: [value_id], references: [id], onDelete: Cascade)
+
+  @@index([product_id])
+  @@index([attribute_id, value_id])
+  @@map("product_attribute_assignments")
+  @@schema("custom")
+}
+
+// Variant-level assignment (volume_ml, concentration…)
+model VariantAttributeAssignment {
+  id            String   @id @default(cuid())
+  variant_id    String
+  attribute_id  String
+  value_id      String?
+  value_decimal Decimal?
+  value_boolean Boolean?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  attribute ProductAttribute       @relation(fields: [attribute_id], references: [id], onDelete: Cascade)
+  value     ProductAttributeValue? @relation(fields: [value_id], references: [id], onDelete: Cascade)
+
+  @@index([variant_id])
+  @@index([attribute_id, value_id])
+  @@map("variant_attribute_assignments")
+  @@schema("custom")
+}
+
+// ─── Group 9: Merchandising ───────────────────────────────────────────────────
+
+model ProductMerchandising {
+  product_id     String
+  region_id      String
+  featured_order Int?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  region Region @relation(fields: [region_id], references: [id], onDelete: Cascade)
+
+  @@id([product_id, region_id])
+  @@index([region_id, featured_order])
+  @@map("product_merchandising")
   @@schema("custom")
 }

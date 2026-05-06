@@ -1,6 +1,6 @@
 import { z } from "zod";
 import dotenv from "dotenv";
-import { logger } from "@fragrance/shared";
+import { logger } from "@fragrance/shared/logger";
 
 dotenv.config();
 

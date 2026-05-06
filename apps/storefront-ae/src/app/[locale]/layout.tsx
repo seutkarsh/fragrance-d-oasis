@@ -5,6 +5,8 @@ import type { Locale } from "@/config/i18n"
 import { LOCALES } from "@/config/i18n"
 import "../globals.css"
 import {QueryProvider} from "@/providers/query-provider";
+import Header from "@/components/ui/header";
+import Footer from "@/components/ui/footer";
 
 const inter = Inter({
     variable: "--font-inter",
@@ -41,9 +43,16 @@ export default async function LocaleLayout({
         lang={validLocale}
         dir={isRTL(validLocale)?"rtl":"ltr"}
         className={`${inter.variable} ${playfair.variable}`}>
-        <body>
+        <body className="flex min-h-screen flex-col">
         <QueryProvider>
-        {children}</QueryProvider></body>
+            <Header locale={validLocale}/>
+            <main className="flex-1 pt-16">
+                {children}
+            </main>
+            <Footer/>
+        </QueryProvider>
+        </body>
+
         </html>
     )
 }

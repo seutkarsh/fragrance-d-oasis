@@ -1,5 +1,6 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
-import { CategoryCustomQuerySchema, logger } from "@fragrance/shared";
+import { CategoryCustomQuerySchema } from "@fragrance/shared";
+import {logger} from "@fragrance/shared/logger"
 import { prisma } from "@fragrance/database";
 
 type CategoryNode = {

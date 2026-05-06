@@ -1,11 +1,11 @@
 import {
     LOCALES_CONFIG,
     REGIONS_CONFIG,
-    logger,
     SEED_ERROR,
     MedusaAdminAuthResponse,
     MedusaRegionsResponse
 } from "@fragrance/shared"
+import {logger} from "@fragrance/shared/logger"
 import {prisma} from "@fragrance/database"
 import {env} from '../config/env'
 

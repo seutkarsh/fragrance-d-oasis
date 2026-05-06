@@ -1,5 +1,6 @@
 import { prisma } from "@fragrance/database";
-import {logger, MedusaAdminAuthResponse, MedusaProduct, MedusaProductsResponse} from "@fragrance/shared";
+import { MedusaAdminAuthResponse, MedusaProduct, MedusaProductsResponse} from "@fragrance/shared";
+import {logger} from "@fragrance/shared/logger"
 import { env } from "../config/env";
 
 // ─── Dev Test Data Config ─────────────────────────────────────────────────────
@@ -125,7 +126,141 @@ const DEV_CATEGORIES = [
     },
 ];
 
+const DEV_SDUI_NAV = {
+    slug: "nav",
+    title: "Navigation",
+    blocks: [
+        {
+            id: "dev-nav-left",
+            layout: "NavLeft",
+            sort_order: 0,
+            content: {
+                links: [
+                    { label: { en: "Collections", ar: "المجموعات" }, href: "/collections" },
+                    { label: { en: "About", ar: "من نحن" }, href: "/about" },
+                    { label: { en: "Blogs", ar: "المدونة" }, href: "/blogs" },
+                    { label: { en: "Gifts", ar: "الهدايا" }, href: "/gifts" },
+                    { label: { en: "Contact Us", ar: "تواصل معنا" }, href: "/contact" },
+                ],
+            },
+        },
+        {
+            id: "dev-nav-logo",
+            layout: "NavLogo",
+            sort_order: 1,
+            content: {
+                src: "/logo.png",
+                alt: { en: "Fragrance d'Oasis", ar: "فراغرانس دي أواسيس" },
+                href: "/",
+            },
+        },
+        {
+            id: "dev-nav-right",
+            layout: "NavRight",
+            sort_order: 2,
+            content: {
+                icons: [
+                    { id: "wishlist", tooltip: { en: "Wishlist", ar: "قائمة الأمنيات" } },
+                    { id: "cart", tooltip: { en: "Cart", ar: "عربة التسوق" } },
+                    { id: "account", tooltip: { en: "Account", ar: "حسابي" } },
+                ],
+            },
+        },
+    ],
+}
 
+const DEV_SDUI_FOOTER = {
+    slug: "footer",
+    title: "Footer",
+    blocks: [
+        {
+            id: "dev-footer-logo",
+            layout: "FooterLogo",
+            sort_order: 0,
+            content: {
+                src: "/logo.png",
+                alt: { en: "Fragrance d'Oasis", ar: "فراغرانس دي أواسيس" },
+                href: "/",
+            },
+        },
+        {
+            id: "dev-footer-newsletter",
+            layout: "FooterNewsletter",
+            sort_order: 1,
+            content: {
+                tagline: {
+                    en: "Exclusive product launches, offers, VIP invites",
+                    ar: "إطلاق منتجات حصرية، عروض، ودعوات VIP",
+                },
+                placeholder: {
+                    en: "Enter your email",
+                    ar: "أدخل بريدك الإلكتروني",
+                },
+                button: {
+                    label: { en: "Sign Up", ar: "اشترك" },
+                    action: { type: "event", name: "submit-newsletter" },
+                    variant: "outline",
+                },
+            },
+        },
+        {
+            id: "dev-footer-links-quick",
+            layout: "FooterLinksColumn",
+            sort_order: 2,
+            content: {
+                heading: { en: "Quick Links", ar: "روابط سريعة" },
+                links: [
+                    { label: { en: "Shop", ar: "تسوق" }, href: "/collections" },
+                    { label: { en: "About Us", ar: "من نحن" }, href: "/about" },
+                    { label: { en: "Blogs", ar: "المدونة" }, href: "/blogs" },
+                ],
+            },
+        },
+        {
+            id: "dev-footer-links-help",
+            layout: "FooterLinksColumn",
+            sort_order: 3,
+            content: {
+                heading: { en: "Can We Help?", ar: "هل يمكننا المساعدة؟" },
+                links: [
+                    { label: { en: "Shipping Policy", ar: "سياسة الشحن" }, href: "/shipping-policy" },
+                    { label: { en: "Privacy Policy", ar: "سياسة الخصوصية" }, href: "/privacy-policy" },
+                    { label: { en: "Terms & Conditions", ar: "الشروط والأحكام" }, href: "/terms" },
+                    { label: { en: "Return & Refund Policy", ar: "سياسة الإرجاع والاسترداد" }, href: "/returns" },
+                    { label: { en: "FAQs", ar: "الأسئلة الشائعة" }, href: "/faqs" },
+                ],
+            },
+        },
+        {
+            id: "dev-footer-links-contact",
+            layout: "FooterLinksColumn",
+            sort_order: 4,
+            content: {
+                heading: { en: "Talk With Us", ar: "تحدث معنا" },
+                links: [
+                    { label: { en: "Contact Us", ar: "تواصل معنا" }, href: "/contact" },
+                    { label: { en: "Email", ar: "البريد الإلكتروني" }, href: "mailto:hello@fodubai.com" },
+                ],
+            },
+        },
+        {
+            id: "dev-footer-social",
+            layout: "FooterSocial",
+            sort_order: 5,
+            content: {
+                icons: [
+                    { id: "instagram", href: "https://instagram.com/fragrancedoasis" },
+                    { id: "facebook", href: "https://facebook.com/fragrancedoasis" },
+                    { id: "youtube", href: "https://youtube.com/fragrancedoasis" },
+                ],
+                copyright: {
+                    en: "Fragrance d'Oasis Dubai",
+                    ar: "© ٢٠٢٦، فراغرانس دي أواسيس دبي",
+                },
+            },
+        },
+    ],
+}
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -429,6 +564,43 @@ async function seedProducts(token: string): Promise<void> {
     }
 }
 
+// ----------Seed SDUI ----------------
+
+async function seedSdui(): Promise<void> {
+    logger.info("Seeding dev SDUI data...")
+
+    for (const pageData of [DEV_SDUI_NAV, DEV_SDUI_FOOTER]) {
+        const page = await prisma.sduiPage.upsert({
+            where: { slug: pageData.slug },
+            update: { title: pageData.title, is_active: true },
+            create: { slug: pageData.slug, title: pageData.title, is_active: true },
+        })
+
+        await Promise.all(pageData.blocks.map(async (block) => {
+            await prisma.sduiBlock.upsert({
+                where: { id: block.id },
+                update: {
+                    layout: block.layout,
+                    content: block.content,
+                    sort_order: block.sort_order,
+                    is_active: true,
+                },
+                create: {
+                    id: block.id,
+                    page_id: page.id,
+                    layout: block.layout,
+                    content: block.content,
+                    sort_order: block.sort_order,
+                    is_active: true,
+                },
+            })
+            logger.info(`Upserted SDUI block: ${block.layout}`)
+        }))
+
+        logger.info(`Seeded SDUI page: ${pageData.slug}`)
+    }
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
@@ -438,6 +610,7 @@ async function main(): Promise<void> {
         const token = await getMedusaToken();
         await seedCategories();
         await seedProducts(token);
+        await seedSdui();
         logger.info("Dev seed completed successfully ✓");
     } catch (error) {
         logger.error(error, "Dev seed failed");
